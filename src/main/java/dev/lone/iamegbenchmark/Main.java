@@ -40,76 +40,131 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor,
                              @NotNull String label,
                              @NotNull String[] args)
     {
-        if(!command.getName().equals("benchmarkentities"))
-            return true;
-
         Player player = (Player) sender;
         Location loc = player.getLocation();
         loc.setYaw(0);
         loc.setPitch(0);
-        if (args[0].startsWith("itemsadder"))
+
+        String action = getArg(args, 0);
+        boolean ai = !getArg(args, 1).equals("noai");
+        String pluginName = getArg(args, 2);
+        switch (action)
         {
-            for (int x = 0; x < 5; x++)
-            {
-                for (int z = 0; z < 5; z++)
+            case "small":
+                spawnEntities(player, loc, pluginName, ai, 5);
+                break;
+            case "stress":
+                spawnEntities(player, loc, pluginName, ai, (int) Math.sqrt(getArg(args, 3, 500)));
+                break;
+            case "clean":
+                for (Iterator<Entity> iterator = entities.iterator(); iterator.hasNext(); )
                 {
-                    CustomEntity custom = CustomEntity.spawn(ENTITY_ID_ITEMSADDER, loc.clone().add(x + 1, 0, z + 1));
-                    LivingEntity entity = (LivingEntity) custom.getEntity();
-                    if (args[0].endsWith("noai"))
-                        entity.setAI(false);
-                    entity.setInvulnerable(true);
-                    entities.add(entity);
+                    Entity entity = iterator.next();
+                    entity.remove();
+                    iterator.remove();
                 }
-            }
-        }
-        else if (args[0].startsWith("meg"))
-        {
-            for (int x = 0; x < 5; x++)
-            {
-                for (int z = 0; z < 5; z++)
-                {
-                    ModelBlueprint blueprint = ModelEngineAPI.getBlueprint(ENTITY_ID_MEG);
-                    ActiveModel megModel = ModelEngineAPI.createActiveModel(blueprint);
-
-                    Zombie entity = loc.getWorld().spawn(loc.clone().add(x + 1, 0, z + 1), Zombie.class, en -> {
-                        if (args[0].endsWith("noai"))
-                            en.setAI(false);
-                        en.setInvulnerable(true);
-                    });
-                    ModeledEntity megEntity = ModelEngineAPI.createModeledEntity(ModelEngineAPI.createModeledEntity(entity).getBase());
-
-                    megEntity.addModel(megModel, false);
-                    megEntity.setBaseEntityVisible(false);
-                    megEntity.getRangeManager().setRenderDistance(loc.getWorld().getViewDistance() * 16);
-                    megEntity.setState(ModelState.IDLE);
-
-                    megEntity.getRangeManager().updatePlayer(player);
-
-                    entities.add(entity);
-                }
-            }
-        }
-        else if (args[0].equals("clean"))
-        {
-            for (Iterator<Entity> iterator = entities.iterator(); iterator.hasNext(); )
-            {
-                Entity entity = iterator.next();
-                entity.remove();
-                iterator.remove();
-            }
+                break;
         }
 
         return true;
     }
 
+    private int getArg(String[] args, int index, int def)
+    {
+        String arg = getArg(args, index);
+        if(arg.equals(""))
+            return def;
+        try
+        {
+            return Integer.parseInt(arg);
+        }
+        catch (Throwable ignored) {}
+        return def;
+    }
+
+    private void spawnEntities(Player player, Location loc, String mode, boolean ai, int iterations)
+    {
+        switch (mode)
+        {
+            case "itemsadder":
+                for (int x = 0; x < iterations; x++)
+                {
+                    for (int z = 0; z < iterations; z++)
+                    {
+                        CustomEntity custom = CustomEntity.spawn(ENTITY_ID_ITEMSADDER, loc.clone().add(x + 1, 0, z + 1));
+                        LivingEntity entity = (LivingEntity) custom.getEntity();
+                        entity.setAI(ai);
+                        entity.setInvulnerable(true);
+                        entities.add(entity);
+                    }
+                }
+                break;
+            case "meg":
+                for (int x = 0; x < iterations; x++)
+                {
+                    for (int z = 0; z < iterations; z++)
+                    {
+                        ModelBlueprint blueprint = ModelEngineAPI.getBlueprint(ENTITY_ID_MEG);
+                        ActiveModel megModel = ModelEngineAPI.createActiveModel(blueprint);
+
+                        Zombie entity = loc.getWorld().spawn(loc.clone().add(x + 1, 0, z + 1), Zombie.class, en -> {
+                            en.setAI(ai);
+                            en.setInvulnerable(true);
+                        });
+                        ModeledEntity megEntity = ModelEngineAPI.createModeledEntity(ModelEngineAPI.createModeledEntity(entity).getBase());
+
+                        megEntity.addModel(megModel, false);
+                        megEntity.setBaseEntityVisible(false);
+                        megEntity.getRangeManager().addTrackedPlayer(player);
+                        megEntity.getRangeManager().setRenderDistance(loc.getWorld().getViewDistance() * 16);
+                        megEntity.setState(ModelState.IDLE);
+
+                        entities.add(entity);
+                    }
+                }
+                break;
+        }
+    }
+
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args)
     {
         List<String> strings = new ArrayList<>();
-        strings.add("itemsadder");
-        strings.add("itemsadder-noai");
-        strings.add("meg");
-        strings.add("meg-noai");
-        strings.add("remove");
+
+        if(args.length == 1)
+        {
+            strings.add("clean");
+            strings.add("small");
+            strings.add("stress");
+        }
+        else if(args.length == 2)
+        {
+            strings.add("ai");
+            strings.add("noai");
+        }
+        else if(args.length == 3)
+        {
+            strings.add("itemsadder");
+            strings.add("meg");
+        }
+        else if(args.length == 4)
+        {
+            if(args[0].equals("stress"))
+            {
+                strings.add("20");
+                strings.add("50");
+                strings.add("100");
+                strings.add("500");
+                strings.add("1000");
+            }
+        }
+
         return strings;
+    }
+
+    public static String getArg(String[] args, int index)
+    {
+        if(index >= args.length)
+            return "";
+        return args[index];
     }
 }
