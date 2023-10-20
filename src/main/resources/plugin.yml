@@ -1,0 +1,8 @@
+name: IAMEGBenchmark
+version: '${project.version}'
+main: dev.lone.iamegbenchmark.Main
+api-version: '1.20'
+commands:
+  benchmarkentities:
+    description: test itemsadder and meg entities
+    permission: benchmarkentities
