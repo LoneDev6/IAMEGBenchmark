@@ -26,3 +26,5 @@ replay_pid*
 .idea/
 *.iml
 target/
+/.paper-nms/classes.json
+/.paper-nms/mappings_1.20.2.tiny

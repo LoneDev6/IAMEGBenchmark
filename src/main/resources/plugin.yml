@@ -1,7 +1,9 @@
 name: IAMEGBenchmark
-version: '${project.version}'
+version: '1.0.2'
 main: dev.lone.iamegbenchmark.Main
 api-version: '1.20'
+softdepend:
+  - ModelEngine
 commands:
   benchmarkentities:
     description: test itemsadder and meg entities
